@@ -7,8 +7,7 @@ server.
 For each of these environments we may require slightly different configurations for our servers. This could be our debug
 level, caching backends, or - of course - sensitive information such as database credentials.
 
-To solve this problem of setting variables per environment we use environment variables with the help of the 
-[PHPDotEnv](https://github.com/vlucas/phpdotenv) library by Vance Lucas.
+To solve this problem of setting variables per environment we use environment variables, with the help of a `.env` file where this isn't feasible; `.env` is a common concept across many projects of varying languages.
 
 ## Security considerations
 

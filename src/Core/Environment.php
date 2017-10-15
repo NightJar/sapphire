@@ -24,6 +24,53 @@ class Environment
     protected static $timeLimitMax = null;
 
     /**
+     * In the case 'true' environment variables cannot be set,
+     * set the appropriate values into the in-memory superglobal.
+     */
+    public static shimFromFile(string $path, string $name = '.env')
+    {
+        $dotEnvFile = $path . DIRECTORY_SEPARATOR . $name;
+        if(is_file($dotEnvFile) && is_readable($dotEnvFile)) {
+            $envVars = file_get_contents($dotEnvFile);
+            //'bash style' comments not valid since php 7.0
+            $envVars = preg_replace('/^#/', ';', $envVars);
+            $envVars = parse_ini_string($envVars);
+            //if the file was invalid $envVars is false and a foreach will error.
+            if (!$envVars) {
+                continue;
+            }
+            foreach ($envVars as $name => $value) {
+                if (!key_exists($name, $_ENV)) {
+                    $_ENV[$name] = $value;
+                }
+                if (!key_exists($name, $_SERVER)) {
+                    $_SERVER[$name] = $value;
+                }
+                putenv("$name=$value");
+                if (function_exists('apache_setenv')) {
+                    apache_setenv($name, $value);
+                }
+                if (!defined($name)) {
+                    define($name, $value);
+                }
+            }
+            break;
+        }
+    }
+
+    /**
+     * Fetch appropriate variable from the environment variables
+     * try first 'true' environment variables, then the $_ENV superglobal
+     *
+     * @param string $name
+     * @return string Values stored in the environment
+     */
+    public static env(string $name)
+    {
+        return getenv($name) ?: $_ENV[$name];
+    }
+
+    /**
      * Extract env vars prior to modification
      *
      * @return array List of all super globals

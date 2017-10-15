@@ -36,11 +36,11 @@ composer require silverstripe/asset-admin ^1.0
 
 This will also install the `graphql` module for GraphQL API access to your SilverStripe system, which powers the `asset-admin` module.
 
-## Migrate to dotenv
+## Migrate to enviornment variables
 
-SilverStripe 4 requires the use of `.env` and "real" environment variables instead of `_ss_environment.php` for your environment configuration.
+SilverStripe 4 requires the use of environment variables instead of `_ss_environment.php` for your environment configuration. Consult the documentation of your web server to set these per host.
 
-You'll need to move your constants to a new `.env` file before SilverStripe will build successfully.
+If you are unable to set 'true' environment variables, you'll need to move your constants to a new `.env` shim file before SilverStripe will build successfully. Set them in the format `NAME=VALUE`.
 
 If you are not able to move your webserver away from using `_ss_environment.php` files, you can use [this example file](https://gist.github.com/robbieaverill/74fbfff6f438c94f6325107e4d7b2a45) and include it at the top of your `mysite/_config.php` file. This will export your constants as environment variables.
 

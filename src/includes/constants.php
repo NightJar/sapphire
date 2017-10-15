@@ -1,7 +1,5 @@
 <?php
 
-use Dotenv\Dotenv;
-use Dotenv\Exception\InvalidPathException;
 use SilverStripe\Core\TempFolder;
 
 /**
@@ -61,13 +59,28 @@ if (!defined('BASE_PATH')) {
 if (!getenv('SS_IGNORE_DOT_ENV')) {
     call_user_func(function () {
         foreach ([BASE_PATH, dirname(BASE_PATH)] as $path) {
-            try {
-                (new Dotenv($path))->load();
-            } catch (InvalidPathException $e) {
-                // no .env found - no big deal
-                continue;
+            $dotEnvFile = $path . DIRECTORY_SEPARATOR . '.env';
+            if(is_file($dotEnvFile) && is_readable($dotEnvFile)) {
+                $envVars = file_get_contents($dotEnvFile);
+                $envVars = preg_replace('/^#/', ';', $envVars);
+                $envVars = parse_ini_string($envVars);
+                //if the file was invalid $envVars is false and a foreach will error.
+                if (!$envVars) {
+                    continue;
+                }
+                foreach ($envVars as $name => $value) {
+                    $_ENV[$name] = $value;
+                    $_SERVER[$name] = $value;
+                    putenv("$name=$value");
+                    if (function_exists('apache_setenv')) {
+                        apache_setenv($name, $value);
+                    }
+                    if (!defined($name)) {
+                        define($name, $value);
+                    }
+                }
+                break;
             }
-            break;
         }
     });
 }
