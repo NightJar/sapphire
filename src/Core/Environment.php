@@ -24,50 +24,51 @@ class Environment
     protected static $timeLimitMax = null;
 
     /**
+     * Simple in memory K:V store for pseudo Environment variables (from .env)
+     *
+     * @var array
+     */
+    protected static $env = [];
+
+    /**
      * In the case 'true' environment variables cannot be set,
      * set the appropriate values into the in-memory superglobal.
+     *
+     * @param string $path path to file
+     * @param string $name filename
+     *
+     * @return array|bool All loaded values, or false on failure.
      */
     public static shimFromFile(string $path, string $name = '.env')
     {
+        $envVars = false;
         $dotEnvFile = $path . DIRECTORY_SEPARATOR . $name;
         if(is_file($dotEnvFile) && is_readable($dotEnvFile)) {
             $envVars = file_get_contents($dotEnvFile);
             //'bash style' comments not valid since php 7.0
             $envVars = preg_replace('/^#/', ';', $envVars);
             $envVars = parse_ini_string($envVars);
-            //if the file was invalid $envVars is false and a foreach will error.
-            if (!$envVars) {
-                continue;
+            if (is_array($envVars)) {
+                static::$env = array_merge($envVars, static::$env);
             }
-            foreach ($envVars as $name => $value) {
-                if (!key_exists($name, $_ENV)) {
-                    $_ENV[$name] = $value;
-                }
-                if (!key_exists($name, $_SERVER)) {
-                    $_SERVER[$name] = $value;
-                }
-                putenv("$name=$value");
-                if (function_exists('apache_setenv')) {
-                    apache_setenv($name, $value);
-                }
-                if (!defined($name)) {
-                    define($name, $value);
-                }
-            }
-            break;
         }
+        return $envVars;
     }
 
     /**
-     * Fetch appropriate variable from the environment variables
-     * try first 'true' environment variables, then the $_ENV superglobal
+     * Fetch named environment variable
+     * Add retrieved values to our store to maintain a source of truth
      *
      * @param string $name
-     * @return string Values stored in the environment
+     * @return string|false Value stored in the environment, or false.
      */
-    public static env(string $name)
+    public static getEnv(string $name)
     {
-        return getenv($name) ?: $_ENV[$name];
+        $store = static::$env;
+        if (!array_key_exists($name, $store)) {
+            $store[$name] = getenv($name);
+        }
+        return $store[$name];
     }
 
     /**
