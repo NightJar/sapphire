@@ -781,6 +781,127 @@ class DataObjectTest extends SapphireTest
         $this->assertFalse($obj->isChanged('FirstName'));
     }
 
+    public function testForceChangeForcesChanges()
+    {
+        $object = $this->objFromFixture(DataObjectTest\Player::class, 'captain1');
+
+        $object->forceChange();
+
+        $this->assertSame(
+            [
+                'FirstName' => [
+                    'before' => 'Captain',
+                    'after' => 'Captain',
+                    'level' => DataObject::CHANGE_FORCED
+                ]
+            ],
+            $object->getChangedFields(['FirstName']),
+            'FirstName is set to forced change'
+        );
+    }
+
+    public function testSettingTheOriginalValueOverTheOrignalValueDoesNotCancelAForcedChange()
+    {
+        $object = $this->objFromFixture(DataObjectTest\Player::class, 'captain1');
+
+        $object->forceChange();
+        $object->FirstName = 'Captain';
+
+        $this->assertSame(
+            [
+                'FirstName' => [
+                    'before' => 'Captain',
+                    'after' => 'Captain',
+                    'level' => DataObject::CHANGE_FORCED
+                ]
+            ],
+            $object->getChangedFields(['FirstName']),
+            'Setting a value to the same value does not remove the forced change flag'
+        );
+    }
+
+    public function testForcingAChangeOnANewValueStillForcesAChange()
+    {
+        $object = $this->objFromFixture(DataObjectTest\Player::class, 'captain1');
+
+        $object->FirstName = 'Updated!';
+        $object->forceChange();
+
+        $this->assertSame(
+            [
+                'FirstName' => [
+                    'before' => 'Captain',
+                    'after' => 'Updated!',
+                    'level' => DataObject::CHANGE_FORCED
+                ]
+            ],
+            $object->getChangedFields(['FirstName']),
+            'Forcing a change on a new value still forces change'
+        );
+    }
+
+    public function testChangingAValueAfterForcingAChangeMaintainsTheForcedChangeFlag()
+    {
+        $object = $this->objFromFixture(DataObjectTest\Player::class, 'captain1');
+
+        $object->forceChange();
+        $object->FirstName = 'Updated!';
+
+        $this->assertSame(
+            [
+                'FirstName' => [
+                    'before' => 'Captain',
+                    'after' => 'Updated!',
+                    'level' => DataObject::CHANGE_FORCED
+                ]
+            ],
+            $object->getChangedFields(['FirstName']),
+            'Changing a value after forcing a change remains flagged to be forced'
+        );
+    }
+
+    public function testResettingAForcedChangeMaintainsTheForcedChangeFlag()
+    {
+        $object = $this->objFromFixture(DataObjectTest\Player::class, 'captain1');
+
+        $object->FirstName = 'Updated!';
+        $object->forceChange();
+        $object->FirstName = 'Captain';
+
+        $this->assertSame(
+            [
+                'FirstName' => [
+                    'before' => 'Captain',
+                    'after' => 'Captain',
+                    'level' => DataObject::CHANGE_FORCED
+                ]
+            ],
+            $object->getChangedFields(['FirstName']),
+            'Resetting a value after issuing the force directive does not negate the force flag'
+        );
+    }
+
+    public function testForceChangeCannotBeCircumvented()
+    {
+        $object = $this->objFromFixture(DataObjectTest\Player::class, 'captain1');
+
+        $object->forceChange();
+        $object->FirstName = 'Updated!';
+        $object->FirstName = 'Captain';
+
+        $this->assertSame(
+            [
+                'FirstName' => [
+                    'before' => 'Captain',
+                    'after' => 'Captain',
+                    'level' => DataObject::CHANGE_FORCED
+                ]
+            ],
+            $object->getChangedFields(['FirstName']),
+            'Setting, then resetting a value does not circumvent a previously issued force change directive'
+        );
+    }
+
     /**
      * @skipUpgrade
      */
